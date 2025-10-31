@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI日記アプリ</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📔 AI日記アプリ</h1>
+            <p class="subtitle">AIがあなたの日記を分析して返信します</p>
+        </header>
+
+        <main>
+            <!-- 日記作成フォーム -->
+            <section class="write-section">
+                <h2>今日の日記を書く</h2>
+                <textarea id="diary-content" placeholder="今日あったことや感じたことを自由に書いてください...&#10;&#10;例：&#10;今日は久しぶりに友達と会えて楽しかった。カフェで3時間も話し込んでしまった。仕事の話や将来の夢について語り合って、元気をもらえた気がする。"></textarea>
+                <button id="submit-btn" class="primary-btn">📝 日記を書く</button>
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>AIが分析中...</p>
+                </div>
+            </section>
+
+            <!-- 日記一覧 -->
+            <section class="diary-list-section">
+                <h2>これまでの日記</h2>
+                <div id="diary-list" class="diary-list">
+                    <!-- 日記がここに表示されます -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
