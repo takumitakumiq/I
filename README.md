@@ -96,6 +96,4 @@ http://localhost:5000
 
 MIT License
 
-## 開発者
 
-このアプリはAIアシスタントによって作成されました。
