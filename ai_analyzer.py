@@ -1,14 +1,15 @@
 import os
-from openai import OpenAI
+from google import genai
 
-# OpenAI クライアントの初期化
+# Gemini クライアントの初期化
 client = None
 try:
-    api_key = os.environ.get('OPENAI_API_KEY')
+    api_key = os.environ.get('GEMINI_API_KEY')
     if api_key:
-        client = OpenAI(api_key=api_key)
+        os.environ['GOOGLE_API_KEY'] = api_key
+        client = genai.Client()
 except Exception as e:
-    print(f"OpenAI初期化エラー: {e}")
+    print(f"Gemini初期化エラー: {e}")
 
 def analyze_diary(content):
     """
@@ -22,7 +23,7 @@ def analyze_diary(content):
     """
     if not client:
         return {
-            'error': 'OpenAI APIキーが設定されていません',
+            'error': 'Gemini APIキーが設定されていません',
             'emotion': '不明',
             'topics': [],
             'keywords': [],
@@ -30,12 +31,7 @@ def analyze_diary(content):
         }
     
     try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": """あなたは優秀な日記分析アシスタントです。
+        prompt = """あなたは優秀な日記分析アシスタントです。
 日記の内容を分析し、以下の項目をJSON形式で返してください：
 1. emotion（感情）: ポジティブ/ニュートラル/ネガティブのいずれか
 2. emotion_detail（詳細な感情）: 喜び、悲しみ、怒り、不安、平穏など具体的な感情
@@ -43,19 +39,27 @@ def analyze_diary(content):
 4. keywords（キーワード）: 重要なキーワードのリスト（最大10個）
 5. summary（要約）: 1-2文で日記を要約
 
-必ずJSON形式で返してください。"""
-                },
-                {
-                    "role": "user",
-                    "content": f"以下の日記を分析してください：\n\n{content}"
-                }
-            ],
-            temperature=0.7,
-            response_format={"type": "json_object"}
+必ずJSON形式で返してください。
+
+以下の日記を分析してください：
+
+""" + content
+        
+        response = client.models.generate_content(
+            model='gemini-2.0-flash-exp',
+            contents=prompt
         )
         
         import json
-        analysis = json.loads(response.choices[0].message.content)
+        # Geminiの応答からJSON部分を抽出
+        text = response.text.strip()
+        # JSONコードブロックがある場合は抽出
+        if '```json' in text:
+            text = text.split('```json')[1].split('```')[0].strip()
+        elif '```' in text:
+            text = text.split('```')[1].split('```')[0].strip()
+        
+        analysis = json.loads(text)
         return analysis
         
     except Exception as e:
@@ -80,7 +84,7 @@ def generate_reply(content, analysis):
         str: AIからの返信メッセージ
     """
     if not client:
-        return "OpenAI APIキーが設定されていないため、返信を生成できません。"
+        return "Gemini APIキーが設定されていないため、返信を生成できません。"
     
     try:
         # 分析結果を文字列化
@@ -91,12 +95,7 @@ def generate_reply(content, analysis):
 要約: {analysis.get('summary', '')}
 """
         
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": """あなたは共感的で優しい日記アシスタントです。
+        prompt = f"""あなたは共感的で優しい日記アシスタントです。
 ユーザーの日記に対して、以下の点を意識して返信してください：
 1. ユーザーの感情に共感する
 2. ポジティブな側面を見つけて励ます
@@ -104,24 +103,19 @@ def generate_reply(content, analysis):
 4. 親しみやすく、温かいトーンで書く
 5. 200-300文字程度で簡潔に
 
-日記の内容と分析結果を参考に、心のこもった返信を書いてください。"""
-                },
-                {
-                    "role": "user",
-                    "content": f"""日記の内容：
+日記の内容：
 {content}
 
 分析結果：
 {analysis_text}
 
 この日記に対して、共感的で励ましの返信を書いてください。"""
-                }
-            ],
-            temperature=0.8,
-            max_tokens=500
-        )
         
-        reply = response.choices[0].message.content
+        response = client.models.generate_content(
+            model='gemini-2.0-flash-exp',
+            contents=prompt
+        )
+        reply = response.text
         return reply
         
     except Exception as e:

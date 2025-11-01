@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI日記アプリ</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 <body>
     <div class="container">
@@ -14,10 +15,38 @@
         </header>
 
         <main>
+            <!-- ツールバー -->
+            <section class="toolbar">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="🔍 日記を検索...">
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="all">全て</button>
+                    <button class="filter-btn" data-filter="ポジティブ">😊 ポジティブ</button>
+                    <button class="filter-btn" data-filter="ニュートラル">😐 ニュートラル</button>
+                    <button class="filter-btn" data-filter="ネガティブ">😢 ネガティブ</button>
+                </div>
+                <div class="action-buttons">
+                    <button id="export-btn" class="action-btn">📥 エクスポート</button>
+                    <button id="import-btn" class="action-btn">📤 インポート</button>
+                    <input type="file" id="import-file" accept=".json" style="display: none;">
+                </div>
+            </section>
+
             <!-- 日記作成フォーム -->
             <section class="write-section">
                 <h2>今日の日記を書く</h2>
+                <div class="editor-toolbar">
+                    <button class="editor-btn" id="voice-btn" title="音声入力">🎤</button>
+                    <button class="editor-btn" id="emoji-btn" title="絵文字">😊</button>
+                    <button class="editor-btn" id="suggest-btn" title="AIが書き方を提案">💡</button>
+                    <span class="char-count" id="char-count">0 文字</span>
+                </div>
                 <textarea id="diary-content" placeholder="今日あったことや感じたことを自由に書いてください...&#10;&#10;例：&#10;今日は久しぶりに友達と会えて楽しかった。カフェで3時間も話し込んでしまった。仕事の話や将来の夢について語り合って、元気をもらえた気がする。"></textarea>
+                <div class="tags-input-container">
+                    <input type="text" id="tags-input" placeholder="タグを追加（例: 仕事、友達）">
+                    <div id="tags-display" class="tags-display"></div>
+                </div>
                 <button id="submit-btn" class="primary-btn">📝 日記を書く</button>
                 <div id="loading" class="loading" style="display: none;">
                     <div class="spinner"></div>
@@ -25,14 +54,105 @@
                 </div>
             </section>
 
+            <!-- サマリーカード -->
+            <section class="summary-cards" id="summary-cards" style="display: none;">
+                <div class="summary-card">
+                    <div class="card-icon">📝</div>
+                    <div class="card-content">
+                        <div class="card-value" id="total-entries">0</div>
+                        <div class="card-label">総日記数</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">🔥</div>
+                    <div class="card-content">
+                        <div class="card-value" id="streak-days">0</div>
+                        <div class="card-label">連続日数</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">😊</div>
+                    <div class="card-content">
+                        <div class="card-value" id="positive-rate">0%</div>
+                        <div class="card-label">ポジティブ率</div>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">✍️</div>
+                    <div class="card-content">
+                        <div class="card-value" id="avg-length">0</div>
+                        <div class="card-label">平均文字数</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 統計・分析グラフ -->
+            <section class="stats-section" id="stats-section" style="display: none;">
+                <div class="section-header">
+                    <h2>📊 分析統計</h2>
+                    <button id="toggle-charts" class="toggle-btn">グラフを非表示</button>
+                </div>
+                <div class="charts-container" id="charts-container">
+                    <div class="chart-box">
+                        <h3>感情の推移</h3>
+                        <canvas id="emotionChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>トピック分布</h3>
+                        <canvas id="topicsChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>よく使う言葉</h3>
+                        <canvas id="keywordsChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>感情分析サマリー</h3>
+                        <canvas id="emotionPieChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>曜日別投稿数</h3>
+                        <canvas id="weekdayChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>月間文字数</h3>
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
             <!-- 日記一覧 -->
             <section class="diary-list-section">
-                <h2>これまでの日記</h2>
+                <div class="section-header">
+                    <h2>これまでの日記</h2>
+                    <div class="sort-controls">
+                        <label>並び替え:</label>
+                        <select id="sort-select">
+                            <option value="date-desc">新しい順</option>
+                            <option value="date-asc">古い順</option>
+                            <option value="length-desc">長い順</option>
+                            <option value="length-asc">短い順</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="diary-list" class="diary-list">
                     <!-- 日記がここに表示されます -->
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- モーダル -->
+    <div id="emoji-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>絵文字を選択</h3>
+            <div class="emoji-grid">
+                😊 😢 😡 😍 😂 🤔 😴 😎 🤗 😱 
+                🎉 🎊 ❤️ 💕 ⭐ ✨ 🌟 🔥 💪 👍
+                🌸 🌺 🌻 🌹 🌷 🍀 🌈 ☀️ 🌙 ⛅
+                📝 📚 💼 🎓 🏆 🎯 💡 🎨 🎵 🎮
+            </div>
+        </div>
     </div>
 
     <script src="/static/script.js"></script>
